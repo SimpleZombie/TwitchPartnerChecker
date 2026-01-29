@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twitch Partner Checker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            padding: 40px 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #1a1a1a;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 32px;
+        }
+
+        .subtitle a {
+            color: #9147ff;
+            text-decoration: none;
+        }
+
+        .subtitle a:hover {
+            text-decoration: underline;
+        }
+
+        .section {
+            margin-bottom: 24px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: #1a1a1a;
+        }
+
+        input[type="text"],
+        input[type="password"],
+        textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #9147ff;
+        }
+
+        .credentials-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        textarea {
+            min-height: 150px;
+            resize: vertical;
+            font-family: 'Courier New', monospace;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: #9147ff;
+            color: white;
+            flex: 1;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #7c3aed;
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+            flex: 1;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #e0e0e0;
+        }
+
+        .btn-export {
+            background: #059669;
+            color: white;
+            flex: 1;
+        }
+
+        .btn-export:hover:not(:disabled) {
+            background: #047857;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 24px;
+            color: #666;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .stats {
+            display: none;
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 6px;
+            margin-bottom: 24px;
+        }
+
+        .stats.show {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 600;
+            color: #1a1a1a;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .results {
+            display: none;
+        }
+
+        .results.show {
+            display: block;
+        }
+
+        .results-header {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #1a1a1a;
+        }
+
+        .user-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border: 1px solid #e5e5e5;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            transition: border-color 0.2s;
+        }
+
+        .user-card:hover {
+            border-color: #ccc;
+        }
+
+        .user-card.partnered {
+            background: #f0fdf4;
+            border-color: #86efac;
+        }
+
+        .user-card.not-partnered {
+            background: #fef2f2;
+            border-color: #fecaca;
+        }
+
+        .user-card.error {
+            background: #fffbeb;
+            border-color: #fde68a;
+        }
+
+        .username {
+            font-size: 15px;
+            font-weight: 500;
+            color: #1a1a1a;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .user-card.partnered .status-badge {
+            background: #22c55e;
+            color: white;
+        }
+
+        .user-card.not-partnered .status-badge {
+            background: #ef4444;
+            color: white;
+        }
+
+        .user-card.error .status-badge {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .export-buttons {
+            display: none;
+        }
+
+        .export-buttons.show {
+            display: flex;
+        }
+
+        @media (max-width: 640px) {
+            .container {
+                padding: 24px;
+            }
+
+            .credentials-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats.show {
+                grid-template-columns: 1fr;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Twitch Partner Checker</h1>
+        <p class="subtitle">Check if Twitch users are partnered. Get API credentials at <a href="https://dev.twitch.tv/console" target="_blank">dev.twitch.tv/console</a></p>
+
+        <div class="section">
+            <label>API Credentials</label>
+            <div class="credentials-grid">
+                <input type="text" id="clientId" placeholder="Client ID">
+                <input type="password" id="clientSecret" placeholder="Client Secret">
+            </div>
+        </div>
+
+        <div class="section">
+            <label>Usernames (one per line)</label>
+            <textarea id="usernames" placeholder="xQc&#10;Pokimane&#10;Ninja"></textarea>
+        </div>
+
+        <div class="button-group">
+            <button class="btn-primary" id="checkBtn">Check Partner Status</button>
+            <button class="btn-secondary" id="clearBtn">Clear</button>
+        </div>
+
+        <div class="loading" id="loading">Checking users...</div>
+
+        <div class="stats" id="stats">
+            <div class="stat-item">
+                <span class="stat-value" id="totalCount">0</span>
+                <span class="stat-label">Total</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value" id="partneredCount">0</span>
+                <span class="stat-label">Partnered</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value" id="notPartneredCount">0</span>
+                <span class="stat-label">Not Partnered</span>
+            </div>
+        </div>
+
+        <div class="button-group export-buttons" id="exportButtons">
+            <button class="btn-export" id="exportTxtBtn">Export as TXT</button>
+            <button class="btn-export" id="exportCsvBtn">Export as CSV</button>
+        </div>
+
+        <div class="results" id="results">
+            <div class="results-header">Results</div>
+            <div id="resultsList"></div>
+        </div>
+    </div>
+
+    <script>
+        const checkBtn = document.getElementById('checkBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const usernamesInput = document.getElementById('usernames');
+        const clientIdInput = document.getElementById('clientId');
+        const clientSecretInput = document.getElementById('clientSecret');
+        const loading = document.getElementById('loading');
+        const results = document.getElementById('results');
+        const resultsList = document.getElementById('resultsList');
+        const stats = document.getElementById('stats');
+        const exportButtons = document.getElementById('exportButtons');
+        const exportTxtBtn = document.getElementById('exportTxtBtn');
+        const exportCsvBtn = document.getElementById('exportCsvBtn');
+
+        let accessToken = null;
+        let tokenExpiry = null;
+        let currentResults = [];
+
+        // Get OAuth token from Twitch
+        async function getTwitchAccessToken(clientId, clientSecret) {
+            try {
+                const response = await fetch('https://id.twitch.tv/oauth2/token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        client_id: clientId,
+                        client_secret: clientSecret,
+                        grant_type: 'client_credentials'
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to authenticate with Twitch API');
+                }
+
+                const data = await response.json();
+                accessToken = data.access_token;
+                tokenExpiry = Date.now() + (data.expires_in * 1000);
+                return accessToken;
+            } catch (error) {
+                console.error('Error getting token:', error);
+                throw error;
+            }
+        }
+
+        // Check if we need to refresh the token
+        async function ensureValidToken(clientId, clientSecret) {
+            if (!accessToken || Date.now() >= tokenExpiry - 60000) {
+                await getTwitchAccessToken(clientId, clientSecret);
+            }
+        }
+
+        // Real Twitch API check
+        async function checkUserPartnerStatus(username, clientId) {
+            try {
+                const response = await fetch(`https://api.twitch.tv/helix/users?login=${encodeURIComponent(username)}`, {
+                    headers: {
+                        'Client-ID': clientId,
+                        'Authorization': `Bearer ${accessToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        throw new Error('Invalid or expired token');
+                    }
+                    throw new Error(`API error: ${response.status}`);
+                }
+
+                const userData = await response.json();
+                
+                if (!userData.data || userData.data.length === 0) {
+                    return { 
+                        username, 
+                        status: 'error', 
+                        message: 'User not found' 
+                    };
+                }
+
+                const user = userData.data[0];
+                const isPartnered = user.broadcaster_type === 'partner';
+                
+                return {
+                    username: user.display_name,
+                    status: isPartnered ? 'partnered' : 'not-partnered',
+                    broadcasterType: user.broadcaster_type || 'regular'
+                };
+            } catch (error) {
+                console.error(`Error checking ${username}:`, error);
+                return { 
+                    username, 
+                    status: 'error', 
+                    message: error.message || 'Error checking user' 
+                };
+            }
+        }
+
+        async function checkAllUsers() {
+            const usernames = usernamesInput.value
+                .split('\n')
+                .map(u => u.trim())
+                .filter(u => u.length > 0);
+
+            const clientId = clientIdInput.value.trim();
+            const clientSecret = clientSecretInput.value.trim();
+
+            if (usernames.length === 0) {
+                alert('Please enter at least one username');
+                return;
+            }
+
+            if (!clientId || !clientSecret) {
+                alert('Please enter your Twitch API credentials');
+                return;
+            }
+
+            // Reset UI
+            loading.classList.add('show');
+            results.classList.remove('show');
+            stats.classList.remove('show');
+            exportButtons.classList.remove('show');
+            checkBtn.disabled = true;
+            resultsList.innerHTML = '';
+
+            try {
+                await ensureValidToken(clientId, clientSecret);
+
+                const resultsData = [];
+                for (const username of usernames) {
+                    const result = await checkUserPartnerStatus(username, clientId);
+                    resultsData.push(result);
+                    
+                    const card = document.createElement('div');
+                    card.className = `user-card ${result.status}`;
+                    
+                    let statusText = result.status === 'partnered' ? 'Partner' : 
+                                    result.status === 'not-partnered' ? 'Not Partner' : 
+                                    'Error';
+                    
+                    card.innerHTML = `
+                        <div class="username">${result.username}</div>
+                        <div class="status-badge">${statusText}</div>
+                    `;
+                    
+                    resultsList.appendChild(card);
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+
+                currentResults = resultsData;
+
+                const partnered = resultsData.filter(r => r.status === 'partnered').length;
+                const notPartnered = resultsData.filter(r => r.status === 'not-partnered').length;
+                
+                document.getElementById('totalCount').textContent = resultsData.length;
+                document.getElementById('partneredCount').textContent = partnered;
+                document.getElementById('notPartneredCount').textContent = notPartnered;
+
+                loading.classList.remove('show');
+                results.classList.add('show');
+                stats.classList.add('show');
+                exportButtons.classList.add('show');
+
+            } catch (error) {
+                loading.classList.remove('show');
+                alert(`Error: ${error.message}`);
+            } finally {
+                checkBtn.disabled = false;
+            }
+        }
+
+        function clearAll() {
+            usernamesInput.value = '';
+            results.classList.remove('show');
+            stats.classList.remove('show');
+            exportButtons.classList.remove('show');
+            resultsList.innerHTML = '';
+            currentResults = [];
+        }
+
+        function exportAsTxt() {
+            let content = 'TWITCH PARTNER STATUS REPORT\n';
+            content += '='.repeat(50) + '\n\n';
+            content += `Total Users Checked: ${currentResults.length}\n`;
+            content += `Partnered: ${currentResults.filter(r => r.status === 'partnered').length}\n`;
+            content += `Not Partnered: ${currentResults.filter(r => r.status === 'not-partnered').length}\n`;
+            content += `Errors: ${currentResults.filter(r => r.status === 'error').length}\n\n`;
+            content += 'RESULTS\n';
+            content += '-'.repeat(50) + '\n\n';
+
+            currentResults.forEach(result => {
+                const statusText = result.status === 'partnered' ? 'PARTNER' : 
+                                  result.status === 'not-partnered' ? 'NOT PARTNER' : 
+                                  'ERROR';
+                content += `${result.username}: ${statusText}\n`;
+            });
+
+            downloadFile(content, 'twitch-partner-check.txt', 'text/plain');
+        }
+
+        function exportAsCsv() {
+            let content = 'Username,Status,Is Partnered\n';
+            
+            currentResults.forEach(result => {
+                const statusText = result.status === 'partnered' ? 'Partner' : 
+                                  result.status === 'not-partnered' ? 'Not Partner' : 
+                                  'Error';
+                const isPartnered = result.status === 'partnered' ? 'Yes' : 'No';
+                content += `"${result.username}","${statusText}","${isPartnered}"\n`;
+            });
+
+            downloadFile(content, 'twitch-partner-check.csv', 'text/csv');
+        }
+
+        function downloadFile(content, filename, mimeType) {
+            const blob = new Blob([content], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        checkBtn.addEventListener('click', checkAllUsers);
+        clearBtn.addEventListener('click', clearAll);
+        exportTxtBtn.addEventListener('click', exportAsTxt);
+        exportCsvBtn.addEventListener('click', exportAsCsv);
+    </script>
+</body>
+</html>
