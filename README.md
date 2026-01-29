@@ -1,3 +1,8 @@
+<p align="center">
+  <img src="https://imgur.com/qyDNap1.png" width="50%"/>
+  <br>
+</p>
+
 # Twitch Partner Checker
 
 A simple web application to check if Twitch users have partnered status. Built with vanilla JavaScript and the Twitch API.
