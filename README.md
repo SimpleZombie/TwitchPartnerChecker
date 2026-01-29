@@ -1,6 +1,7 @@
 # Twitch Partner Checker
 
 A simple web application to check if Twitch users have partnered status. Built with vanilla JavaScript and the Twitch API.
+
 ![image](https://imgur.com/npdTyFx.png) 
 
 ## Quick Start
