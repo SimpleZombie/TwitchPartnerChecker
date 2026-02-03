@@ -167,7 +167,7 @@
 
         .stats.show {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(4, 1fr);
             gap: 16px;
         }
 
@@ -230,6 +230,11 @@
             border-color: #fecaca;
         }
 
+        .user-card.affiliate {
+            background: #eff6ff;
+            border-color: #93c5fd;
+        }
+
         .user-card.error {
             background: #fffbeb;
             border-color: #fde68a;
@@ -255,6 +260,11 @@
 
         .user-card.not-partnered .status-badge {
             background: #ef4444;
+            color: white;
+        }
+
+        .user-card.affiliate .status-badge {
+            background: #3b82f6;
             color: white;
         }
 
@@ -325,8 +335,12 @@
                 <span class="stat-label">Partnered</span>
             </div>
             <div class="stat-item">
-                <span class="stat-value" id="notPartneredCount">0</span>
-                <span class="stat-label">Not Partnered</span>
+                <span class="stat-value" id="affiliateCount">0</span>
+                <span class="stat-label">Affiliate</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value" id="regularCount">0</span>
+                <span class="stat-label">Regular</span>
             </div>
         </div>
 
@@ -423,12 +437,22 @@
                 }
 
                 const user = userData.data[0];
-                const isPartnered = user.broadcaster_type === 'partner';
+                const broadcasterType = user.broadcaster_type || 'regular';
+                
+                // Determine status based on broadcaster_type
+                let status;
+                if (broadcasterType === 'partner') {
+                    status = 'partnered';
+                } else if (broadcasterType === 'affiliate') {
+                    status = 'affiliate';
+                } else {
+                    status = 'not-partnered';
+                }
                 
                 return {
                     username: user.display_name,
-                    status: isPartnered ? 'partnered' : 'not-partnered',
-                    broadcasterType: user.broadcaster_type || 'regular'
+                    status: status,
+                    broadcasterType: broadcasterType
                 };
             } catch (error) {
                 console.error(`Error checking ${username}:`, error);
@@ -478,9 +502,16 @@
                     const card = document.createElement('div');
                     card.className = `user-card ${result.status}`;
                     
-                    let statusText = result.status === 'partnered' ? 'Partner' : 
-                                    result.status === 'not-partnered' ? 'Not Partner' : 
-                                    'Error';
+                    let statusText;
+                    if (result.status === 'partnered') {
+                        statusText = 'Partner';
+                    } else if (result.status === 'affiliate') {
+                        statusText = 'Affiliate';
+                    } else if (result.status === 'not-partnered') {
+                        statusText = 'Regular';
+                    } else {
+                        statusText = 'Error';
+                    }
                     
                     card.innerHTML = `
                         <div class="username">${result.username}</div>
@@ -494,11 +525,13 @@
                 currentResults = resultsData;
 
                 const partnered = resultsData.filter(r => r.status === 'partnered').length;
-                const notPartnered = resultsData.filter(r => r.status === 'not-partnered').length;
+                const affiliate = resultsData.filter(r => r.status === 'affiliate').length;
+                const regular = resultsData.filter(r => r.status === 'not-partnered').length;
                 
                 document.getElementById('totalCount').textContent = resultsData.length;
                 document.getElementById('partneredCount').textContent = partnered;
-                document.getElementById('notPartneredCount').textContent = notPartnered;
+                document.getElementById('affiliateCount').textContent = affiliate;
+                document.getElementById('regularCount').textContent = regular;
 
                 loading.classList.remove('show');
                 results.classList.add('show');
@@ -527,15 +560,23 @@
             content += '='.repeat(50) + '\n\n';
             content += `Total Users Checked: ${currentResults.length}\n`;
             content += `Partnered: ${currentResults.filter(r => r.status === 'partnered').length}\n`;
-            content += `Not Partnered: ${currentResults.filter(r => r.status === 'not-partnered').length}\n`;
+            content += `Affiliate: ${currentResults.filter(r => r.status === 'affiliate').length}\n`;
+            content += `Regular: ${currentResults.filter(r => r.status === 'not-partnered').length}\n`;
             content += `Errors: ${currentResults.filter(r => r.status === 'error').length}\n\n`;
             content += 'RESULTS\n';
             content += '-'.repeat(50) + '\n\n';
 
             currentResults.forEach(result => {
-                const statusText = result.status === 'partnered' ? 'PARTNER' : 
-                                  result.status === 'not-partnered' ? 'NOT PARTNER' : 
-                                  'ERROR';
+                let statusText;
+                if (result.status === 'partnered') {
+                    statusText = 'PARTNER';
+                } else if (result.status === 'affiliate') {
+                    statusText = 'AFFILIATE';
+                } else if (result.status === 'not-partnered') {
+                    statusText = 'REGULAR';
+                } else {
+                    statusText = 'ERROR';
+                }
                 content += `${result.username}: ${statusText}\n`;
             });
 
@@ -543,14 +584,21 @@
         }
 
         function exportAsCsv() {
-            let content = 'Username,Status,Is Partnered\n';
+            let content = 'Username,Status,Broadcaster Type\n';
             
             currentResults.forEach(result => {
-                const statusText = result.status === 'partnered' ? 'Partner' : 
-                                  result.status === 'not-partnered' ? 'Not Partner' : 
-                                  'Error';
-                const isPartnered = result.status === 'partnered' ? 'Yes' : 'No';
-                content += `"${result.username}","${statusText}","${isPartnered}"\n`;
+                let statusText;
+                if (result.status === 'partnered') {
+                    statusText = 'Partner';
+                } else if (result.status === 'affiliate') {
+                    statusText = 'Affiliate';
+                } else if (result.status === 'not-partnered') {
+                    statusText = 'Regular';
+                } else {
+                    statusText = 'Error';
+                }
+                const broadcasterType = result.broadcasterType || 'N/A';
+                content += `"${result.username}","${statusText}","${broadcasterType}"\n`;
             });
 
             downloadFile(content, 'twitch-partner-check.csv', 'text/csv');
